@@ -13,41 +13,48 @@
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            padding: 20px; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            padding: 10px; 
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif; 
+        }
+
+        /* Responsive Wrapper */
+        .omr-wrapper {
+            width: 100%;
+            overflow-x: auto; /* Mobile par column nahi katenge, scroll hoga */
+            display: flex;
+            justify-content: center;
         }
 
         .omr-page {
             background: white;
-            width: 900px;
-            padding: 30px;
+            width: 850px; /* Standard A4 width compatible */
+            padding: 20px;
             border: 3px solid var(--omr-pink);
-            position: relative;
+            box-sizing: border-box;
         }
 
         .header-title {
             text-align: center;
             color: var(--omr-pink);
-            font-size: 26px;
+            font-size: clamp(18px, 4vw, 24px);
             font-weight: bold;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             border-bottom: 3px double var(--omr-pink);
-            padding-bottom: 10px;
         }
 
-        /* Input Section */
         .info-section {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 25px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
         }
 
         .info-box {
-            flex: 1;
-            border: 2px solid var(--omr-pink);
-            padding: 12px;
+            border: 1.5px solid var(--omr-pink);
+            padding: 8px;
             color: var(--omr-pink);
-            font-size: 13px;
+            font-size: 11px;
             font-weight: bold;
         }
 
@@ -55,77 +62,78 @@
             width: 100%;
             border: none;
             border-bottom: 1px dashed var(--omr-pink);
-            margin-top: 8px;
             outline: none;
-            font-size: 16px;
+            font-size: 14px;
+            background: transparent;
         }
 
-        /* Controls */
         .controls {
             background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            width: 900px;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 850px;
             text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            box-sizing: border-box;
         }
 
         .btn {
-            padding: 12px 20px;
+            padding: 10px 15px;
             border: none;
             cursor: pointer;
             font-weight: bold;
             color: white;
             border-radius: 5px;
             margin: 5px;
-            transition: 0.3s;
+            font-size: 13px;
         }
         .btn-gen { background: var(--omr-pink); }
         .btn-pdf { background: #ff5722; }
-        .btn-share { background: #25d366; } /* WhatsApp Color */
 
-        /* Grid for Sets */
+        /* Question Grid - Fixed for 1 Page */
         .sheet-grid {
             display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: center;
+            flex-wrap: nowrap; /* Columns ko force karega ek hi line mein rehne ke liye */
+            gap: 8px;
+            justify-content: space-between;
         }
 
         .q-column {
-            border: 2px solid var(--omr-pink);
-            padding: 5px;
-            background: #fff;
+            border: 1.5px solid var(--omr-pink);
+            padding: 4px;
+            flex: 1; /* Equal width for all columns */
+            min-width: 150px;
         }
 
         .q-row {
             display: flex;
             align-items: center;
-            padding: 4px;
-            border-bottom: 1px solid #fce4ec;
+            padding: 2px 0;
+            border-bottom: 0.5px solid #fce4ec;
         }
 
         .q-num {
-            width: 35px;
-            font-size: 12px;
+            width: 25px;
+            font-size: 10px;
             font-weight: bold;
             color: #333;
-            border-right: 1.5px solid var(--omr-pink);
-            margin-right: 8px;
+            border-right: 1px solid var(--omr-pink);
+            margin-right: 5px;
+            text-align: center;
         }
 
-        .options { display: flex; gap: 8px; }
+        .options { display: flex; gap: 4px; }
 
         .circle {
-            width: 22px;
-            height: 22px;
-            border: 1.5px solid var(--omr-pink);
+            width: 18px;
+            height: 18px;
+            border: 1px solid var(--omr-pink);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
+            font-size: 9px;
             color: var(--omr-pink);
             cursor: pointer;
         }
@@ -139,53 +147,55 @@
         .footer {
             display: flex;
             justify-content: space-between;
-            margin-top: 40px;
+            margin-top: 20px;
         }
 
         .sign-area {
-            width: 40%;
-            border-top: 2px solid var(--omr-pink);
+            width: 45%;
+            border-top: 1.5px solid var(--omr-pink);
             text-align: center;
             padding-top: 5px;
             color: var(--omr-pink);
-            font-weight: bold;
+            font-size: 11px;
         }
 
+        /* PDF Printing fix */
         @media print {
             .no-print { display: none; }
             body { background: white; padding: 0; }
-            .omr-page { border: 2px solid var(--omr-pink); width: 100%; box-shadow: none; }
+            .omr-wrapper { overflow: visible; }
+            .omr-page { width: 100%; border: 1px solid var(--omr-pink); }
         }
     </style>
 </head>
 <body>
 
     <div class="controls no-print">
-        <strong>Questions: </strong>
         <select id="qCount" onchange="generateOMR()">
-            <option value="100">100 (Set of 25)</option>
-            <option value="120">120 (Set of 30)</option>
-            <option value="150">150 (Set of 38)</option>
-            <option value="160">160 (Set of 40)</option>
+            <option value="100">100 Questions</option>
+            <option value="120">120 Questions</option>
+            <option value="150">150 Questions</option>
+            <option value="160">160 Questions</option>
         </select>
-        <button class="btn btn-gen" onclick="generateOMR()">Refresh Sheet</button>
-        <button class="btn btn-pdf" onclick="downloadPDF()">Save as PDF</button>
-        <button class="btn btn-share" onclick="shareSheet()">Share via WhatsApp</button>
+        <button class="btn btn-gen" onclick="generateOMR()">Refresh</button>
+        <button class="btn btn-pdf" onclick="downloadPDF()">Save PDF</button>
     </div>
 
-    <div class="omr-page" id="capture-area">
-        <div class="header-title">HKS ONLINE OMR ANSWER SHEET FILLER</div>
+    <div class="omr-wrapper">
+        <div class="omr-page" id="capture-area">
+            <div class="header-title">HKS ONLINE OMR ANSWER SHEET FILLER</div>
 
-        <div class="info-section">
-            <div class="info-box">NAME & SUBJECT / TOPIC <input type="text" id="studentDetail" placeholder="Type here..."></div>
-            <div class="info-box">EXAM DATE <input type="date" id="examDate"></div>
-        </div>
+            <div class="info-section">
+                <div class="info-box">NAME & SUBJECT / TOPIC <input type="text" id="studentDetail"></div>
+                <div class="info-box">EXAM DATE <input type="date"></div>
+            </div>
 
-        <div id="sheet-content" class="sheet-grid"></div>
+            <div id="sheet-content" class="sheet-grid"></div>
 
-        <div class="footer">
-            <div class="sign-area">Student's Signature</div>
-            <div class="sign-area">Invigilator's Signature</div>
+            <div class="footer">
+                <div class="sign-area">Student's Signature</div>
+                <div class="sign-area">Invigilator's Signature</div>
+            </div>
         </div>
     </div>
 
@@ -195,7 +205,6 @@
             const total = parseInt(document.getElementById('qCount').value);
             container.innerHTML = '';
 
-            // Logic for sets as requested
             let perSet = 25;
             if (total == 120) perSet = 30;
             if (total == 150) perSet = 38;
@@ -236,23 +245,18 @@
 
         function downloadPDF() {
             const element = document.getElementById('capture-area');
-            const name = document.getElementById('studentDetail').value || 'OMR_Sheet';
+            const name = document.getElementById('studentDetail').value || 'HKS_OMR';
+            
+            // PDF scaling logic to fit 1 page
             const opt = {
-                margin: 5,
-                filename: `HKS_OMR_${name}.pdf`,
+                margin: [10, 5, 10, 5],
+                filename: `${name}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
+                html2canvas: { scale: 3, useCORS: true, letterRendering: true },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
+            
             html2pdf().set(opt).from(element).save();
-        }
-
-        function shareSheet() {
-            // Mobile par WhatsApp share trigger karne ke liye
-            const name = document.getElementById('studentDetail').value;
-            const text = `HKS OMR Filler: Answer sheet for ${name} is ready. Please download the PDF after filling.`;
-            const url = `whatsapp://send?text=${encodeURIComponent(text)}`;
-            window.open(url, '_blank');
         }
 
         window.onload = generateOMR;
