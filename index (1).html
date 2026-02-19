@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HKS Online OMR Filler</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root { --omr-pink: #d81b60; --row-light: #fdf2f5; }
+        
+        body { 
+            background: #444; 
+            margin: 0; 
+            padding: 10px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            font-family: 'Segoe UI', Arial, sans-serif; 
+        }
+
+        .no-print {
+            background: #f0f0f0;
+            padding: 10px;
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .omr-page {
+            background: white;
+            width: 210mm; 
+            min-height: 290mm;
+            padding: 12mm; 
+            border: 3px solid var(--omr-pink);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-title {
+            text-align: center;
+            color: var(--omr-pink);
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            border-bottom: 3px double var(--omr-pink);
+            padding-bottom: 5px;
+        }
+
+        .info-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .info-box {
+            border: 1.5px solid var(--omr-pink);
+            padding: 6px 10px;
+            color: var(--omr-pink);
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .name-subject { flex: 3; }
+        .date-box { flex: 1.2; }
+
+        .info-box input {
+            width: 100%;
+            border: none;
+            border-bottom: 1px dashed var(--omr-pink);
+            outline: none;
+            font-size: 14px;
+            background: transparent;
+            margin-top: 4px;
+        }
+
+        .sheet-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            flex-grow: 1;
+        }
+
+        .q-column {
+            border: 1.5px solid var(--omr-pink);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .q-row {
+            display: flex;
+            align-items: center;
+            padding: 3px 0;
+            border-bottom: 0.5px solid #eee;
+        }
+
+        /* Zebra Striping: Har even row ko halka sa shade dena */
+        .q-row:nth-child(even) {
+            background-color: var(--row-light);
+        }
+
+        .q-num {
+            width: 24px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #333;
+            border-right: 1px solid var(--omr-pink);
+            margin-right: 5px;
+            text-align: center;
+        }
+
+        .options { display: flex; gap: 4px; }
+
+        .circle {
+            width: 17px;
+            height: 17px;
+            border: 1.2px solid var(--omr-pink);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            color: var(--omr-pink);
+            cursor: pointer;
+            background: white; /* Ensure circle background is clean */
+        }
+
+        .circle.active {
+            background-color: #000;
+            color: white;
+            border-color: #000;
+        }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .sign-area {
+            width: 35%;
+            border-top: 1.5px solid var(--omr-pink);
+            text-align: center;
+            padding-top: 5px;
+            color: var(--omr-pink);
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .btn { padding: 8px 15px; border: none; cursor: pointer; color: white; font-weight: bold; border-radius: 4px; margin: 2px; }
+
+        @media print { .no-print { display: none; } }
+    </style>
+</head>
+<body>
+
+    <div class="no-print">
+        <select id="qCount" onchange="generateOMR()" style="padding: 6px;">
+            <option value="100">100 Questions</option>
+            <option value="120">120 Questions</option>
+            <option value="150">150 Questions</option>
+            <option value="160">160 Questions</option>
+        </select>
+        <button class="btn" style="background:var(--omr-pink)" onclick="generateOMR()">Refresh</button>
+        <button class="btn" style="background:#ff5722" onclick="downloadPDF()">Save PDF</button>
+    </div>
+
+    <div id="capture-area" class="omr-page">
+        <div class="header-title">HKS ONLINE OMR ANSWER SHEET FILLER</div>
+
+        <div class="info-section">
+            <div class="info-box name-subject">
+                NAME & SUBJECT / TOPIC 
+                <input type="text" id="studentDetail" placeholder="...">
+            </div>
+            <div class="info-box date-box">
+                DATE 
+                <input type="date">
+            </div>
+        </div>
+
+        <div id="sheet-content" class="sheet-grid"></div>
+
+        <div class="footer">
+            <div class="sign-area">Student's Signature</div>
+            <div class="sign-area">Invigilator's Signature</div>
+        </div>
+    </div>
+
+    <script>
+        function generateOMR() {
+            const container = document.getElementById('sheet-content');
+            const total = parseInt(document.getElementById('qCount').value);
+            container.innerHTML = '';
+
+            let perCol = total / 5;
+
+            for (let c = 0; c < 5; c++) {
+                const colDiv = document.createElement('div');
+                colDiv.className = 'q-column';
+
+                for (let i = 1; i <= perCol; i++) {
+                    const qNum = (c * perCol) + i;
+                    if (qNum > total) break;
+
+                    const row = document.createElement('div');
+                    row.className = 'q-row';
+                    row.innerHTML = `
+                        <span class="q-num">${qNum}</span>
+                        <div class="options">
+                            <div class="circle" onclick="fill(this)">A</div>
+                            <div class="circle" onclick="fill(this)">B</div>
+                            <div class="circle" onclick="fill(this)">C</div>
+                            <div class="circle" onclick="fill(this)">D</div>
+                        </div>
+                    `;
+                    colDiv.appendChild(row);
+                }
+                container.appendChild(colDiv);
+            }
+        }
+
+        function fill(el) {
+            const row = el.parentElement;
+            row.querySelectorAll('.circle').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function downloadPDF() {
+            const element = document.getElementById('capture-area');
+            const name = document.getElementById('studentDetail').value || 'HKS_OMR';
+            
+            const opt = {
+                margin: 0,
+                filename: `${name}.pdf`,
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(element).save();
+        }
+
+        window.onload = generateOMR;
+    </script>
+</body>
+</html>
