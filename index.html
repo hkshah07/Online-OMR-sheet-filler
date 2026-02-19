@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HKS Online OMR Filler</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root { --omr-pink: #d81b60; }
+        
+        body { 
+            background: #444; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 20px; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        }
+
+        .omr-page {
+            background: white;
+            width: 900px;
+            padding: 30px;
+            border: 3px solid var(--omr-pink);
+            position: relative;
+        }
+
+        .header-title {
+            text-align: center;
+            color: var(--omr-pink);
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            border-bottom: 3px double var(--omr-pink);
+            padding-bottom: 10px;
+        }
+
+        /* Input Section */
+        .info-section {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .info-box {
+            flex: 1;
+            border: 2px solid var(--omr-pink);
+            padding: 12px;
+            color: var(--omr-pink);
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .info-box input {
+            width: 100%;
+            border: none;
+            border-bottom: 1px dashed var(--omr-pink);
+            margin-top: 8px;
+            outline: none;
+            font-size: 16px;
+        }
+
+        /* Controls */
+        .controls {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            width: 900px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            border-radius: 5px;
+            margin: 5px;
+            transition: 0.3s;
+        }
+        .btn-gen { background: var(--omr-pink); }
+        .btn-pdf { background: #ff5722; }
+        .btn-share { background: #25d366; } /* WhatsApp Color */
+
+        /* Grid for Sets */
+        .sheet-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .q-column {
+            border: 2px solid var(--omr-pink);
+            padding: 5px;
+            background: #fff;
+        }
+
+        .q-row {
+            display: flex;
+            align-items: center;
+            padding: 4px;
+            border-bottom: 1px solid #fce4ec;
+        }
+
+        .q-num {
+            width: 35px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+            border-right: 1.5px solid var(--omr-pink);
+            margin-right: 8px;
+        }
+
+        .options { display: flex; gap: 8px; }
+
+        .circle {
+            width: 22px;
+            height: 22px;
+            border: 1.5px solid var(--omr-pink);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: var(--omr-pink);
+            cursor: pointer;
+        }
+
+        .circle.active {
+            background-color: #000;
+            color: white;
+            border-color: #000;
+        }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+        }
+
+        .sign-area {
+            width: 40%;
+            border-top: 2px solid var(--omr-pink);
+            text-align: center;
+            padding-top: 5px;
+            color: var(--omr-pink);
+            font-weight: bold;
+        }
+
+        @media print {
+            .no-print { display: none; }
+            body { background: white; padding: 0; }
+            .omr-page { border: 2px solid var(--omr-pink); width: 100%; box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls no-print">
+        <strong>Questions: </strong>
+        <select id="qCount" onchange="generateOMR()">
+            <option value="100">100 (Set of 25)</option>
+            <option value="120">120 (Set of 30)</option>
+            <option value="150">150 (Set of 38)</option>
+            <option value="160">160 (Set of 40)</option>
+        </select>
+        <button class="btn btn-gen" onclick="generateOMR()">Refresh Sheet</button>
+        <button class="btn btn-pdf" onclick="downloadPDF()">Save as PDF</button>
+        <button class="btn btn-share" onclick="shareSheet()">Share via WhatsApp</button>
+    </div>
+
+    <div class="omr-page" id="capture-area">
+        <div class="header-title">HKS ONLINE OMR ANSWER SHEET FILLER</div>
+
+        <div class="info-section">
+            <div class="info-box">NAME & SUBJECT / TOPIC <input type="text" id="studentDetail" placeholder="Type here..."></div>
+            <div class="info-box">EXAM DATE <input type="date" id="examDate"></div>
+        </div>
+
+        <div id="sheet-content" class="sheet-grid"></div>
+
+        <div class="footer">
+            <div class="sign-area">Student's Signature</div>
+            <div class="sign-area">Invigilator's Signature</div>
+        </div>
+    </div>
+
+    <script>
+        function generateOMR() {
+            const container = document.getElementById('sheet-content');
+            const total = parseInt(document.getElementById('qCount').value);
+            container.innerHTML = '';
+
+            // Logic for sets as requested
+            let perSet = 25;
+            if (total == 120) perSet = 30;
+            if (total == 150) perSet = 38;
+            if (total == 160) perSet = 40;
+
+            const totalSets = Math.ceil(total / perSet);
+
+            for (let s = 0; s < totalSets; s++) {
+                const setDiv = document.createElement('div');
+                setDiv.className = 'q-column';
+
+                for (let i = 1; i <= perSet; i++) {
+                    const qNum = (s * perSet) + i;
+                    if (qNum > total) break;
+
+                    const row = document.createElement('div');
+                    row.className = 'q-row';
+                    row.innerHTML = `
+                        <span class="q-num">${qNum}</span>
+                        <div class="options">
+                            <div class="circle" onclick="fill(this)">A</div>
+                            <div class="circle" onclick="fill(this)">B</div>
+                            <div class="circle" onclick="fill(this)">C</div>
+                            <div class="circle" onclick="fill(this)">D</div>
+                        </div>
+                    `;
+                    setDiv.appendChild(row);
+                }
+                container.appendChild(setDiv);
+            }
+        }
+
+        function fill(el) {
+            const row = el.parentElement;
+            row.querySelectorAll('.circle').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function downloadPDF() {
+            const element = document.getElementById('capture-area');
+            const name = document.getElementById('studentDetail').value || 'OMR_Sheet';
+            const opt = {
+                margin: 5,
+                filename: `HKS_OMR_${name}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        function shareSheet() {
+            // Mobile par WhatsApp share trigger karne ke liye
+            const name = document.getElementById('studentDetail').value;
+            const text = `HKS OMR Filler: Answer sheet for ${name} is ready. Please download the PDF after filling.`;
+            const url = `whatsapp://send?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+        }
+
+        window.onload = generateOMR;
+    </script>
+</body>
+</html>
